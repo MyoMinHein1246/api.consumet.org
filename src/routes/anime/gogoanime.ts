@@ -2,8 +2,6 @@ import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from '
 import { ANIME } from '@consumet/extensions';
 import { StreamingServers } from '@consumet/extensions/dist/models';
 import cache from '../../utils/cache';
-import { redis } from '../../main';
-import { Redis } from 'ioredis';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   const gogoanime = new ANIME.Gogoanime(process.env.GOGOANIME_URL);
@@ -36,12 +34,11 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     const query = (request.params as { query: string }).query;
     const page = (request.query as { page: number }).page || 1;
 
-    const res = redis ? await cache.fetch(
-      redis as Redis,
+    const res = await cache.fetch(
       `${redisPrefix}search;${page};${query}`,
       async () => await gogoanime.search(query, page),
       redisCacheTime,
-    ) : await gogoanime.search(query, page);
+    );
 
     reply.status(200).send(res);
   });
@@ -50,16 +47,13 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     const id = decodeURIComponent((request.params as { id: string }).id);
 
     try {
-      const res = redis ? await cache.fetch(
-        redis as Redis,
+      const res = await cache.fetch(
         `${redisPrefix}info;${id}`,
         async () => await gogoanime
-        .fetchAnimeInfo(id)
-        .catch((err) => reply.status(404).send({ message: err })),
+          .fetchAnimeInfo(id)
+          .catch((err) => reply.status(404).send({ message: err })),
         redisCacheTime,
-      ) : await gogoanime
-      .fetchAnimeInfo(id)
-      .catch((err) => reply.status(404).send({ message: err }));
+      );
 
       reply.status(200).send(res);
     } catch (err) {
@@ -74,16 +68,14 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     const page = (request.query as { page: number }).page ?? 1;
 
     try {
-      const res = redis ? await cache.fetch(
-        redis as Redis,
+      const res = await cache.fetch(
         `${redisPrefix}genre;${page};${genre}`,
         async () => await gogoanime
-        .fetchGenreInfo(genre, page)
-        .catch((err) => reply.status(404).send({ message: err })),
+          .fetchGenreInfo(genre, page)
+          .catch((err) => reply.status(404).send({ message: err })),
         redisCacheTime,
-      ) : await gogoanime
-      .fetchGenreInfo(genre, page)
-      .catch((err) => reply.status(404).send({ message: err }));
+      );
+
       reply.status(200).send(res);
     } catch {
       reply
@@ -94,17 +86,15 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 
   fastify.get('/genre/list', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      
-      const res = redis ? await cache.fetch(
-        redis as Redis,
+
+      const res = await cache.fetch(
         `${redisPrefix}genre-list`,
         async () => await gogoanime
-        .fetchGenreList()
-        .catch((err) => reply.status(404).send({ message: err })),
+          .fetchGenreList()
+          .catch((err) => reply.status(404).send({ message: err })),
         redisCacheTime * 24,
-      ) : await gogoanime
-      .fetchGenreList()
-      .catch((err) => reply.status(404).send({ message: err }));
+      )
+
       reply.status(200).send(res);
     } catch {
       reply
@@ -124,16 +114,13 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
       }
 
       try {
-        const res = redis ? await cache.fetch(
-          redis as Redis,
+        const res = await cache.fetch(
           `${redisPrefix}watch;${server};${episodeId}`,
           async () => await gogoanime
-          .fetchEpisodeSources(episodeId, server)
-          .catch((err) => reply.status(404).send({ message: err })),
+            .fetchEpisodeSources(episodeId, server)
+            .catch((err) => reply.status(404).send({ message: err })),
           redisCacheTime,
-        ) : await gogoanime
-        .fetchEpisodeSources(episodeId, server)
-        .catch((err) => reply.status(404).send({ message: err }));
+        )
 
         reply.status(200).send(res);
       } catch (err) {
@@ -150,16 +137,13 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
       const episodeId = (request.params as { episodeId: string }).episodeId;
 
       try {
-        const res = redis ? await cache.fetch(
-          redis as Redis,
+        const res = await cache.fetch(
           `${redisPrefix}servers;${episodeId}`,
           async () => await gogoanime
-          .fetchEpisodeServers(episodeId)
-          .catch((err) => reply.status(404).send({ message: err })),
+            .fetchEpisodeServers(episodeId)
+            .catch((err) => reply.status(404).send({ message: err })),
           redisCacheTime,
-        ) : await gogoanime
-        .fetchEpisodeServers(episodeId)
-        .catch((err) => reply.status(404).send({ message: err }));
+        )
 
         reply.status(200).send(res);
       } catch (err) {
@@ -174,12 +158,11 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     try {
       const page = (request.query as { page: number }).page ?? 1;
 
-      const res = redis ? await cache.fetch(
-        redis as Redis,
+      const res = await cache.fetch(
         `${redisPrefix}top-airing;${page}`,
         async () => await gogoanime.fetchTopAiring(page),
         redisCacheTime,
-      ) : await gogoanime.fetchTopAiring(page);
+      )
 
       reply.status(200).send(res);
     } catch (err) {
@@ -193,12 +176,11 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     try {
       const page = (request.query as { page: number }).page ?? 1;
 
-      const res = redis ? await cache.fetch(
-        redis as Redis,
+      const res = await cache.fetch(
         `${redisPrefix}movies;${page}`,
         async () => await gogoanime.fetchRecentMovies(page),
         redisCacheTime,
-      ) : await gogoanime.fetchRecentMovies(page);
+      )
 
       reply.status(200).send(res);
     } catch (err) {
@@ -212,12 +194,11 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     try {
       const page = (request.query as { page: number }).page ?? 1;
 
-      const res = redis ? await cache.fetch(
-        redis as Redis,
+      const res = await cache.fetch(
         `${redisPrefix}popular;${page}`,
         async () => await gogoanime.fetchPopular(page),
         redisCacheTime,
-      ) : await gogoanime.fetchPopular(page);
+      )
 
       reply.status(200).send(res);
     } catch (err) {
@@ -234,12 +215,11 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
         const type = (request.query as { type: number }).type ?? 1;
         const page = (request.query as { page: number }).page ?? 1;
 
-        const res = redis ? await cache.fetch(
-          redis as Redis,
+        const res = await cache.fetch(
           `${redisPrefix}recent-episodes;${page};${type}`,
           async () => await gogoanime.fetchRecentEpisodes(page, type),
           redisCacheTime,
-        ) : await gogoanime.fetchRecentEpisodes(page, type);
+        )
 
         reply.status(200).send(res);
       } catch (err) {
@@ -255,12 +235,11 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
       try {
         const page = (request.query as { page: number }).page ?? 1;
 
-        const res = redis ? await cache.fetch(
-          redis as Redis,
+        const res = await cache.fetch(
           `gogoanime:anime-list;${page}`,
           async () => await gogoanime.fetchAnimeList(page),
           redisCacheTime,
-        ) : await gogoanime.fetchAnimeList(page);
+        )
 
         reply.status(200).send(res);
       } catch (err) {
@@ -274,19 +253,17 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   fastify.get('/download', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const downloadLink = (request.query as { link: string }).link;
-      if(!downloadLink){
+      if (!downloadLink) {
         reply.status(400).send('Invalid link');
       }
-      const res = redis ? await cache.fetch(
-        redis as Redis,
+      const res = await cache.fetch(
         `${redisPrefix}download-${downloadLink}`,
         async () => await gogoanime
-        .fetchDirectDownloadLink(downloadLink)
-        .catch((err) => reply.status(404).send({ message: err })),
+          .fetchDirectDownloadLink(downloadLink)
+          .catch((err) => reply.status(404).send({ message: err })),
         redisCacheTime * 24,
-      ) : await gogoanime
-      .fetchDirectDownloadLink(downloadLink, process.env.RECAPTCHATOKEN ?? '')
-      .catch((err) => reply.status(404).send({ message: err }));
+      )
+
       reply.status(200).send(res);
     } catch {
       reply
