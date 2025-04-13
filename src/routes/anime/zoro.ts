@@ -46,6 +46,13 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     reply.status(200).send(res);
   });
 
+  fastify.get('/spotlight', async (request: FastifyRequest, reply: FastifyReply) => {
+
+    const res = await cache.fetch('anime:zoro:spotlight', async () => await zoro.fetchSpotlight(), 60 * 60 * 24);
+
+    reply.status(200).send(res);
+  });
+
   fastify.get(
     '/recent-episodes',
     async (request: FastifyRequest, reply: FastifyReply) => {
