@@ -118,7 +118,7 @@ export const tmdbApi = process.env.TMDB_KEY && process.env.TMDB_KEY;
   }
 
   console.log(chalk.green(`Starting server on port ${PORT}... 🚀`));
-  if (!process.env.REDIS_HOST)
+  if (!redis)
     console.warn(chalk.yellowBright('Redis not found. Cache disabled.'));
   if (!process.env.TMDB_KEY)
     console.warn(
