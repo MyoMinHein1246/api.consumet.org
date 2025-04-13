@@ -354,31 +354,33 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   });
 };
 
-const generateAnilistMeta = (provider: string | undefined = undefined): Anilist => {
-  if (typeof provider !== 'undefined') {
-    let possibleProvider = PROVIDERS_LIST.ANIME.find(
-      (p) => p.name.toLowerCase() === provider.toLocaleLowerCase(),
+const generateAnilistMeta = (provider?: string): Anilist => {
+  // Find the provider from the list
+  const possibleProvider = provider
+    ? PROVIDERS_LIST.ANIME.find(
+      (p) => p.name.toLowerCase() === provider.toLowerCase(),
+    )
+    : undefined;
+
+  // Handle the case where the provider is NineAnime
+  if (possibleProvider instanceof NineAnime) {
+    const nineAnimeInstance = new ANIME.NineAnime(
+      process.env?.NINE_ANIME_HELPER_URL,
+      {
+        url: process.env?.NINE_ANIME_PROXY as string,
+      },
+      process.env?.NINE_ANIME_HELPER_KEY as string,
     );
-
-    if (possibleProvider instanceof NineAnime) {
-      possibleProvider = new ANIME.NineAnime(
-        process.env?.NINE_ANIME_HELPER_URL,
-        {
-          url: process.env?.NINE_ANIME_PROXY as string,
-        },
-        process.env?.NINE_ANIME_HELPER_KEY as string,
-      );
-    }
-
-    return new META.Anilist(possibleProvider, {
-      url: process.env.PROXY as string | string[],
-    });
-  } else {
-    // default provider is Zoro
-    return new Anilist(new Zoro(), {
+    return new META.Anilist(nineAnimeInstance, {
       url: process.env.PROXY as string | string[],
     });
   }
+
+  // If no provider is found or the provider is undefined, default to Zoro
+  const defaultProvider = possibleProvider || new Zoro();
+  return new META.Anilist(defaultProvider, {
+    url: process.env.PROXY as string | string[],
+  });
 };
 
 export default routes;
