@@ -3,8 +3,6 @@ import { MOVIES } from '@consumet/extensions';
 import { StreamingServers } from '@consumet/extensions/dist/models';
 
 import cache from '../../utils/cache';
-import { redis } from '../../main';
-import { Redis } from 'ioredis';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   const sflix = new MOVIES.SFlix();
@@ -13,7 +11,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     rp.status(200).send({
       intro:
         "Welcome to the sflix provider: check out the provider's website @ https://sflix.to/",
-      routes: ['/:query', '/info', '/watch','/recent-shows','/recent-movies','/trending','/servers','/country','/genre'],
+      routes: ['/:query', '/info', '/watch', '/recent-shows', '/recent-movies', '/trending', '/servers', '/country', '/genre'],
       documentation: 'https://docs.consumet.org/#tag/sflix',
     });
   });
@@ -23,40 +21,31 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 
     const page = (request.query as { page: number }).page;
 
-    let res = redis
-      ? await cache.fetch(
-        redis as Redis,
-        `sflix:${query}:${page}`,
-        async () => await sflix.search(query, page ? page : 1),
-        60 * 60 * 6,
-      )
-      : await sflix.search(query, page ? page : 1);
+    let res = await cache.fetch(
+      `sflix:${query}:${page}`,
+      async () => await sflix.search(query, page ? page : 1),
+      60 * 60 * 6,
+    )
 
     reply.status(200).send(res);
   });
 
   fastify.get('/recent-shows', async (request: FastifyRequest, reply: FastifyReply) => {
-    let res = redis
-      ? await cache.fetch(
-        redis as Redis,
-        `sflix:recent-shows`,
-        async () => await sflix.fetchRecentTvShows(),
-        60 * 60 * 3,
-      )
-      : await sflix.fetchRecentTvShows();
+    let res = await cache.fetch(
+      `sflix:recent-shows`,
+      async () => await sflix.fetchRecentTvShows(),
+      60 * 60 * 3,
+    )
 
     reply.status(200).send(res);
   });
 
   fastify.get('/recent-movies', async (request: FastifyRequest, reply: FastifyReply) => {
-    let res = redis
-      ? await cache.fetch(
-        redis as Redis,
-        `sflix:recent-movies`,
-        async () => await sflix.fetchRecentMovies(),
-        60 * 60 * 3,
-      )
-      : await sflix.fetchRecentMovies();
+    let res = await cache.fetch(
+      `sflix:recent-movies`,
+      async () => await sflix.fetchRecentMovies(),
+      60 * 60 * 3,
+    )
 
     reply.status(200).send(res);
   });
@@ -74,19 +63,14 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
         return reply.status(200).send(res);
       }
 
-      let res = redis
-        ? await cache.fetch(
-          redis as Redis,
-          `sflix:trending:${type}`,
-          async () =>
-            type === 'tv'
-              ? await sflix.fetchTrendingTvShows()
-              : await sflix.fetchTrendingMovies(),
-          60 * 60 * 3,
-        )
-        : type === 'tv'
-          ? await sflix.fetchTrendingTvShows()
-          : await sflix.fetchTrendingMovies();
+      let res = await cache.fetch(
+        `sflix:trending:${type}`,
+        async () =>
+          type === 'tv'
+            ? await sflix.fetchTrendingTvShows()
+            : await sflix.fetchTrendingMovies(),
+        60 * 60 * 3,
+      )
 
       reply.status(200).send(res);
     } catch (error) {
@@ -106,14 +90,11 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
       });
 
     try {
-      let res = redis
-        ? await cache.fetch(
-          redis as Redis,
-          `sflix:info:${id}`,
-          async () => await sflix.fetchMediaInfo(id),
-          60 * 60 * 3,
-        )
-        : await sflix.fetchMediaInfo(id);
+      let res = await cache.fetch(
+        `sflix:info:${id}`,
+        async () => await sflix.fetchMediaInfo(id),
+        60 * 60 * 3,
+      )
 
       reply.status(200).send(res);
     } catch (err) {
@@ -138,14 +119,11 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
       return reply.status(400).send({ message: 'Invalid server query' });
 
     try {
-      let res = redis
-        ? await cache.fetch(
-          redis as Redis,
-          `sflix:watch:${episodeId}:${mediaId}:${server}`,
-          async () => await sflix.fetchEpisodeSources(episodeId, mediaId, server),
-          60 * 30,
-        )
-        : await sflix.fetchEpisodeSources(episodeId, mediaId, server);
+      let res = await cache.fetch(
+        `sflix:watch:${episodeId}:${mediaId}:${server}`,
+        async () => await sflix.fetchEpisodeSources(episodeId, mediaId, server),
+        60 * 30,
+      )
 
       reply.status(200).send(res);
     } catch (err) {
@@ -160,19 +138,16 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     const mediaId = (request.query as { mediaId: string }).mediaId;
 
     if (typeof episodeId === 'undefined')
-        return reply.status(400).send({ message: 'episodeId is required' });
-      if (typeof mediaId === 'undefined')
-        return reply.status(400).send({ message: 'mediaId is required' });
-    
+      return reply.status(400).send({ message: 'episodeId is required' });
+    if (typeof mediaId === 'undefined')
+      return reply.status(400).send({ message: 'mediaId is required' });
+
     try {
-      let res = redis
-        ? await cache.fetch(
-          redis as Redis,
-          `sflix:servers:${episodeId}:${mediaId}`,
-          async () => await sflix.fetchEpisodeServers(episodeId, mediaId),
-          60 * 30,
-        )
-        : await sflix.fetchEpisodeServers(episodeId, mediaId);
+      let res = await cache.fetch(
+        `sflix:servers:${episodeId}:${mediaId}`,
+        async () => await sflix.fetchEpisodeServers(episodeId, mediaId),
+        60 * 30,
+      )
 
       reply.status(200).send(res);
     } catch (error) {
@@ -187,14 +162,11 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     const country = (request.params as { country: string }).country;
     const page = (request.query as { page: number }).page ?? 1;
     try {
-      let res = redis
-        ? await cache.fetch(
-          redis as Redis,
-          `sflix:country:${country}:${page}`,
-          async () => await sflix.fetchByCountry(country, page),
-          60 * 60 * 3,
-        )
-        : await sflix.fetchByCountry(country, page);
+      let res = await cache.fetch(
+        `sflix:country:${country}:${page}`,
+        async () => await sflix.fetchByCountry(country, page),
+        60 * 60 * 3,
+      )
 
       reply.status(200).send(res);
     } catch (error) {
@@ -210,14 +182,11 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     const genre = (request.params as { genre: string }).genre;
     const page = (request.query as { page: number }).page ?? 1;
     try {
-      let res = redis
-        ? await cache.fetch(
-          redis as Redis,
-          `sflix:genre:${genre}:${page}`,
-          async () => await sflix.fetchByGenre(genre, page),
-          60 * 60 * 3,
-        )
-        : await sflix.fetchByGenre(genre, page);
+      let res = await cache.fetch(
+        `sflix:genre:${genre}:${page}`,
+        async () => await sflix.fetchByGenre(genre, page),
+        60 * 60 * 3,
+      )
 
       reply.status(200).send(res);
     } catch (error) {
