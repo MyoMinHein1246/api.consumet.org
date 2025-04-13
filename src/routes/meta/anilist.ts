@@ -45,7 +45,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
       return 'WINTER'; // December to February
     };
 
-    const res = cache.fetch(`anilist:spotlight-anime:${page}:${perPage}`, async () => await anilist.advancedSearch(undefined, 'ANIME', page, perPage, 'TV', ['POPULARITY_DESC'], undefined, undefined, new Date().getFullYear(), 'RELEASING', getCurrentSeason()), 60 * 60 * 24);
+    const res = await cache.fetch(`anilist:spotlight-anime:${page}:${perPage}`, async () => await anilist.advancedSearch(undefined, 'ANIME', page, perPage, 'TV', ['POPULARITY_DESC'], undefined, undefined, new Date().getFullYear(), 'RELEASING', getCurrentSeason()), 60 * 60 * 24);
 
     reply.status(200).send(res);
   });
