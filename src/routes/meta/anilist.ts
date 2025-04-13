@@ -31,6 +31,25 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     reply.status(200).send(res);
   });
 
+  fastify.get('/spotlight-anime', async (request: FastifyRequest, reply: FastifyReply) => {
+    const page = (request.query as { page: number }).page;
+    const perPage = (request.query as { perPage: number }).perPage;
+    const anilist = generateAnilistMeta();
+
+    const getCurrentSeason = () => {
+      const month = new Date().getMonth(); // 0-11 (January is 0)
+
+      if (month >= 2 && month <= 4) return 'SPRING'; // March to May
+      if (month >= 5 && month <= 7) return 'SUMMER'; // June to August
+      if (month >= 8 && month <= 10) return 'FALL'; // September to November
+      return 'WINTER'; // December to February
+    };
+
+    const res = cache.fetch(`anilist:spotlight-anime:${page}:${perPage}`, async () => await anilist.advancedSearch(undefined, 'ANIME', page, perPage, 'TV', ['POPULARITY_DESC'], undefined, undefined, new Date().getFullYear(), 'RELEASING', getCurrentSeason()), 60 * 60 * 24);
+
+    reply.status(200).send(res);
+  });
+
   fastify.get(
     '/advanced-search',
     async (request: FastifyRequest, reply: FastifyReply) => {
