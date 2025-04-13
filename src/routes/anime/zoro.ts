@@ -1,6 +1,8 @@
 import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from 'fastify';
 import { ANIME } from '@consumet/extensions';
 import { StreamingServers, SubOrSub } from '@consumet/extensions/dist/models';
+import cache from '../../utils/cache';
+
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   const zoro = new ANIME.Zoro(process.env.ZORO_URL);
@@ -49,7 +51,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     async (request: FastifyRequest, reply: FastifyReply) => {
       const page = (request.query as { page: number }).page;
 
-      const res = await zoro.fetchRecentlyUpdated(page);
+      const res = await cache.fetch(`anime:zoro:recent-episodes:${page}`, async () => await zoro.fetchRecentlyUpdated(page), 60 * 60 * 24);
 
       reply.status(200).send(res);
     },
@@ -58,7 +60,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   fastify.get('/top-airing', async (request: FastifyRequest, reply: FastifyReply) => {
     const page = (request.query as { page: number }).page;
 
-    const res = await zoro.fetchTopAiring(page);
+    const res = await cache.fetch("anime:zoro:top-airing", async () => await zoro.fetchTopAiring(page), 60 * 60 * 24);
 
     reply.status(200).send(res);
   });
@@ -66,7 +68,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   fastify.get('/most-popular', async (request: FastifyRequest, reply: FastifyReply) => {
     const page = (request.query as { page: number }).page;
 
-    const res = await zoro.fetchMostPopular(page);
+    const res = await cache.fetch("anime:zoro:most-popular", async () => await zoro.fetchMostPopular(page), 60 * 60 * 24);
 
     reply.status(200).send(res);
   });
