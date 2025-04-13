@@ -1,34 +1,129 @@
-import { Redis } from 'ioredis';
+import { Redis } from '@upstash/redis';
+import { redis } from '../main';
+
 /* eslint-disable import/no-anonymous-default-export */
 
 /*
 TLDR; " Expires " is seconds based. for example 60*60 would = 3600 (an hour)
 */
 
-const fetch = async <T>(redis: Redis, key: string, fetcher: () => T, expires: number) => {
-  const existing = await get<T>(redis, key);
-  if (existing !== null) return existing;
+interface ICacheHandler {
 
-  return set(redis, key, fetcher, expires);
-};
+  /**
+   * Sets a value in the cache. If the value does not exist, it uses the fetcher function
+   * to retrieve the value, stores it in the cache, and sets an expiration time.
+   * @param key - The cache key.
+   * @param fetcher - A function to fetch the value to be stored in the cache.
+   * @param expires - The expiration time in seconds.
+   * @returns The value that was set in the cache.
+   */
+  set: <T>(key: string, fetcher: () => T, expires: number) => Promise<T>;
 
-const get = async <T>(redis: Redis, key: string): Promise<T> => {
-  console.log('GET: ' + key);
-  const value = await redis.get(key);
-  if (value === null) return null as any;
+  /**
+   * Retrieves a value from the cache using the specified key.
+   * @param key - The cache key.
+   * @returns The cached value, or null if the key does not exist or has expired.
+   */
+  get: <T>(key: string) => Promise<T | null>;
 
-  return JSON.parse(value);
-};
+  /**
+   * Deletes a value from the cache using the specified key.
+   * @param key - The cache key.
+   * @returns A promise that resolves when the key is deleted.
+   */
+  del: (key: string) => Promise<void>;
 
-const set = async <T>(redis: Redis, key: string, fetcher: () => T, expires: number) => {
-  console.log(`SET: ${key}, EXP: ${expires}`);
-  const value = await fetcher();
-  await redis.set(key, JSON.stringify(value), 'EX', expires);
-  return value;
-};
+  /**
+   * Fetches a value from the cache. If the value does not exist, it uses the fetcher function
+   * to retrieve the value, stores it in the cache, and sets an expiration time.
+   * @param key - The cache key.
+   * @param fetcher - A function to fetch the value if it is not in the cache.
+   * @param expires - The expiration time in seconds.
+   * @returns The cached or fetched value.
+   */
+  fetch: <T>(key: string, fetcher: () => T, expires: number) => Promise<T>;
+}
 
-const del = async (redis: Redis, key: string) => {
-  await redis.del(key);
-};
+/**
+ * RedisCacheHandler is a class that implements the ICacheHandler interface for Redis.
+ * It provides methods to fetch, set, get, and delete values in a Redis cache.
+ */
+class RedisCacheHandler implements ICacheHandler {
+  private inMemoryCache: Map<string, { value: unknown; expiresAt: number }> = new Map();
+  private maxInMemoryCacheItems: number;
 
-export default { fetch, set, get, del };
+  constructor(private redis?: Redis, maxInMemoryCacheItems: number = 100) {
+    this.maxInMemoryCacheItems = maxInMemoryCacheItems;
+  }
+
+  /**
+   * Fetches a value from the cache. If the value does not exist, it uses the fetcher function
+   * to retrieve the value, stores it in the cache, and sets an expiration time.
+   * @param key - The cache key.
+   * @param fetcher - A function to fetch the value if it is not in the cache.
+   * @param expires - The expiration time in seconds.
+   * @returns The cached or fetched value.
+   */
+  fetch = async <T>(key: string, fetcher: () => T, expires: number): Promise<T> => {
+    const existing = await this.get<T>(key);
+    if (existing !== null) return existing;
+
+    return this.set<T>(key, fetcher, expires);
+  };
+
+  set = async <T>(key: string, fetcher: () => T, expires: number): Promise<T> => {
+    console.log(`SET: ${key}, EXP: ${expires}`);
+    const value = await fetcher();
+
+    if (value === null || value === undefined) return null as any;
+
+    if (this.redis) {
+      await this.redis.set(key, JSON.stringify(value), { ex: expires });
+    } else {
+      const expiresAt = Date.now() + expires * 1000;
+
+      // Enforce max in-memory cache size
+      if (this.inMemoryCache.size >= this.maxInMemoryCacheItems) {
+        const oldestKey = this.inMemoryCache.keys().next().value;
+        if (oldestKey !== undefined) {
+          this.inMemoryCache.delete(oldestKey);
+        }
+      }
+
+      this.inMemoryCache.set(key, { value, expiresAt });
+    }
+
+    return value;
+  };
+
+  get = async <T>(key: string): Promise<T | null> => {
+    console.log('GET: ' + key);
+
+    if (this.redis) {
+      const value = await this.redis.get(key);
+      if (value === null || value === undefined) return null;
+      return typeof value === 'string' ? (JSON.parse(value) as T) : null;
+    } else {
+      const entry = this.inMemoryCache.get(key);
+      if (!entry || entry.expiresAt < Date.now()) {
+        this.inMemoryCache.delete(key);
+        return null;
+      }
+      return entry.value as T;
+    }
+  };
+
+  del = async (key: string): Promise<void> => {
+    console.log('DEL: ' + key);
+
+    if (this.redis) {
+      await this.redis.del(key);
+    } else {
+      this.inMemoryCache.delete(key);
+    }
+  };
+}
+
+const cache = new RedisCacheHandler(redis, 10);
+
+export default cache;

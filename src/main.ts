@@ -1,5 +1,5 @@
 require('dotenv').config();
-import Redis from 'ioredis';
+import { Redis } from '@upstash/redis';
 import Fastify from 'fastify';
 import FastifyCors from '@fastify/cors';
 import fs from 'fs';
@@ -15,13 +15,7 @@ import news from './routes/news';
 import chalk from 'chalk';
 import Utils from './utils';
 
-export const redis =
-  process.env.REDIS_HOST &&
-  new Redis({
-    host: process.env.REDIS_HOST,
-    port: Number(process.env.REDIS_PORT),
-    password: process.env.REDIS_PASSWORD,
-  });
+export const redis = Redis.fromEnv();
 
 const fastify = Fastify({
   maxParamLength: 1000,
