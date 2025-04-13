@@ -135,12 +135,6 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     },
   );
 
-  fastify.get('/spotlight', async (request: FastifyRequest, reply: FastifyReply) => {
-    const res = await zoro.fetchSpotlight();
-
-    reply.status(200).send(res);
-  });
-
   fastify.get(
     '/search-suggestions/:query',
     async (request: FastifyRequest, reply: FastifyReply) => {
