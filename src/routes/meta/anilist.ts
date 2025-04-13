@@ -165,7 +165,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   fastify.get(
     '/recent-episodes',
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const provider = (request.query as { provider: 'zoro' }).provider;
+      const provider = (request.query as { provider: "zoro" | "gogoanime" | undefined }).provider || "zoro";
       const page = (request.query as { page: number }).page;
       const perPage = (request.query as { perPage: number }).perPage;
 
