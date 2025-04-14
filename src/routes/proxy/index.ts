@@ -4,11 +4,8 @@ const allowAll = process.env.PROXY_ALLOW_ALL || true;
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     fastify.all('/', async (request: FastifyRequest, reply: FastifyReply) => {
-        const allowedOrigins = [
-            'https://anime-addict-anonymous.vercel.app',
-            'http://localhost:3000', // Adjust this to your local development URL
-            'http://127.0.0.1:3000',
-        ];
+        // Read allowed origins from environment variables
+        const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',');
 
         // Validate the Origin or Referer header
         const origin = request.headers.origin || request.headers.referer;
