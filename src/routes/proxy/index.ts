@@ -3,7 +3,7 @@ import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from '
 const allowAll = true;
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
-    fastify.all('/*', async (request: FastifyRequest, reply: FastifyReply) => {
+    fastify.all('/', async (request: FastifyRequest, reply: FastifyReply) => {
         const allowedOrigins = [
             'https://anime-addict-anonymous.vercel.app',
             'http://localhost:3000', // Adjust this to your local development URL
