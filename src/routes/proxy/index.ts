@@ -79,15 +79,20 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
             });
 
             // Ensure CORS headers are included
-            reply.header('Access-Control-Allow-Origin', '*');
+            reply.headers({
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+            });
 
             // Set the response status code
             reply.status(response.status);
 
             // Send the response body
             const responseBody = Buffer.from(await response.arrayBuffer());
-            const contentType = response.headers.get('content-type') || 'application/octet-stream';
+            const contentType = response.headers.get('content-type') || 'application/vnd.apple.mpegurl';
             reply.type(contentType);
+
             return reply.send(responseBody);
         } catch (error: any) {
             return reply.status(500).send({ error: 'Error proxying request', details: error.message });
