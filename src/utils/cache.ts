@@ -54,9 +54,6 @@ class RedisCacheHandler implements ICacheHandler {
   private maxInMemoryCacheItems: number;
 
   constructor(private redis?: Redis, maxInMemoryCacheItems: number = 100) {
-    console.log('Redis cache handler initialized');
-    console.log(this.redis);
-    console.log('Max in-memory cache items:', maxInMemoryCacheItems);
     this.maxInMemoryCacheItems = maxInMemoryCacheItems;
   }
 

@@ -12,7 +12,8 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 
         // Validate the Origin or Referer header
         const origin = request.headers.origin || request.headers.referer;
-        if (!origin || (!allowedOrigins.some((allowed) => origin.startsWith(allowed)) && !allowAll)) {
+
+        if ((!origin || !allowedOrigins.some((allowed) => origin.startsWith(allowed))) && !allowAll) {
             return reply.status(403).send({ error: 'Access denied: Origin not allowed' });
         }
 
