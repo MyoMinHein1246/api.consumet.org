@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from 'fastify';
 
-const allowAll = true;
+const allowAll = process.env.PROXY_ALLOW_ALL || true;
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     fastify.all('/', async (request: FastifyRequest, reply: FastifyReply) => {
