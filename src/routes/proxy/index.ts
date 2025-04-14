@@ -82,7 +82,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
             reply.headers({
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin, User-Agent',
+
             });
 
             // Set the response status code
