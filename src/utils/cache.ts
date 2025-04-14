@@ -1,11 +1,12 @@
 import { Redis } from '@upstash/redis';
-import { redis } from '../main';
 
 /* eslint-disable import/no-anonymous-default-export */
 
 /*
 TLDR; " Expires " is seconds based. for example 60*60 would = 3600 (an hour)
 */
+
+export const redis = Redis.fromEnv();
 
 interface ICacheHandler {
 
@@ -53,6 +54,9 @@ class RedisCacheHandler implements ICacheHandler {
   private maxInMemoryCacheItems: number;
 
   constructor(private redis?: Redis, maxInMemoryCacheItems: number = 100) {
+    console.log('Redis cache handler initialized');
+    console.log(this.redis);
+    console.log('Max in-memory cache items:', maxInMemoryCacheItems);
     this.maxInMemoryCacheItems = maxInMemoryCacheItems;
   }
 
@@ -78,6 +82,7 @@ class RedisCacheHandler implements ICacheHandler {
     if (value === null || value === undefined) return null as any;
 
     if (this.redis) {
+      console.log('Setting value in Redis cache');
       await this.redis.set(key, JSON.stringify(value), { ex: expires });
     } else {
       const expiresAt = Date.now() + expires * 1000;

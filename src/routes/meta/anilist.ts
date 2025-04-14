@@ -258,7 +258,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     const id = (request.params as { id: string }).id;
 
     const anilist = generateAnilistMeta();
-    const res = await anilist.fetchAnilistInfoById(id);
+    const res = await cache.fetch(`anilist:data;${id}`, async () => await anilist.fetchAnilistInfoById(id), 60 * 60 * 24);
 
     reply.status(200).send(res);
   });

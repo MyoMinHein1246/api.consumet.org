@@ -14,8 +14,7 @@ import meta from './routes/meta';
 import news from './routes/news';
 import chalk from 'chalk';
 import Utils from './utils';
-
-export const redis = Redis.fromEnv();
+import { redis } from './utils/cache';
 
 const fastify = Fastify({
   maxParamLength: 1000,
@@ -145,6 +144,7 @@ export const tmdbApi = process.env.TMDB_KEY && process.env.TMDB_KEY;
         }`,
       );
     });
+
     fastify.get('*', (request, reply) => {
       reply.status(404).send({
         message: '',
