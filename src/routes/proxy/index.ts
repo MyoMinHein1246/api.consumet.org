@@ -2,6 +2,32 @@ import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from '
 
 const allowAll = process.env.PROXY_ALLOW_ALL || true;
 
+"use server";
+
+export async function proxyM3U8(masterUrl: string): Promise<string> {
+    try {
+        const response = await fetch(masterUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch master.m3u8: ${response.statusText}`);
+        }
+
+        const masterContent = await response.text();
+
+        // Rewrite relative paths to absolute URLs using the proxy
+        const proxyBaseUrl = "https://api-consumet-org-one-indol.vercel.app"?.replace(/\/+$/, "") || "";
+        const rewrittenContent = masterContent.replace(
+            /(URI=|,)(["']?)([^"'\n]+\.m3u8)/g,
+            (_, prefix, quote, relativePath) =>
+                `${prefix}${quote}${proxyBaseUrl}?url=${new URL(relativePath, masterUrl).toString()}`
+        );
+
+        return rewrittenContent;
+    } catch (error) {
+        console.error("Error rewriting master.m3u8:", error);
+        throw error;
+    }
+}
+
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     fastify.all('/', async (request: FastifyRequest, reply: FastifyReply) => {
         // Read allowed origins from environment variables
@@ -60,6 +86,8 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 
             // Send the response body
             const responseBody = Buffer.from(await response.arrayBuffer());
+            const contentType = response.headers.get('content-type') || 'application/octet-stream';
+            reply.type(contentType);
             return reply.send(responseBody);
         } catch (error: any) {
             return reply.status(500).send({ error: 'Error proxying request', details: error.message });
